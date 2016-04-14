@@ -4,21 +4,36 @@
 #include <stdio.h>
 #include <string.h>
 
+#define BUFF_SIZE 512 
+
 int main (int argc, char**argv) {
     struct stat srcStat;
     struct stat dstStat;
-    
-    printf("%d, %d\n", sizeof(argv[1]) / sizeof(argv[1][0]), sizeof(argv[2]) /sizeof(argv[2][0]));
+    struct stat tempStat;
+    char strCurrentDir[BUFF_SIZE]; //Buffer to contain current working directory
+    char strTempDir[BUFF_SIZE]; //Buffer to contain temporary workign director
+    ino_t srcParentInode = 0;
+    ino_t dstParentInode = 0;
+
     if(argc != 3) {
         fprintf(stderr, "usage : 2016225284_PE4 SourceFile DestinationFile\n");
         exit(0);
+    }else {
+        getcwd(strCurrentDir, BUFF_SIZE);
     }
 
+    //source file should exist!
     if(stat(argv[1],&srcStat) == -1 ||!S_ISDIR(srcStat.st_mode)) {
-        fprintf(stderr, "SourceFile should be a file\n");
+        fprintf(stderr, "SourceFile should be a existing file\n");
+    }else {
+        //source file exists, find parent inode
+        chdir("..");
+        getcwd(strTempDir, BUFF_SIZE);
+        stat(strTempDir, &tempStat);
+        srcParentInode = tempStat.st_ino;                    
     }
 
-    //no file exists
+    //destination file or folder?
     if(stat(argv[2], &dstStat) == -1) {
         //is it directory?
         //or is it new file destination?
