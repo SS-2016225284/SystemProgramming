@@ -7,29 +7,71 @@
  Description : Hello World in C, Ansi-style
  ============================================================================
  */
-
-#include <stdio.h>
+#include <signal.h> 
+#include <unistd.h> 
+#include <string.h> 
+#include <stdio.h> 
 #include <stdlib.h>
-#include <signal.h>
-#include <unistd.h>
 
+void sig_int(int signo);
 
-void are_you_sure(int signo);
+int main()
+{
+    struct sigaction intsig;
+    
+    // SIGINT (CTRL+C) ---
+    intsig.sa_handler = sig_int;
+    sigemptyset(&intsig.sa_mask);
+    intsig.sa_flags = 0;
+    if (sigaction(SIGINT, &intsig, 0) == -1)
+    {
+        printf ("signal(SIGINT) error");
+        return -1;
+    }    
+    // ---------------------------------
 
-
-int main(void) {
-	signal(SIGINT, (void*)are_you_sure);
-	while(1) {
-		printf("Hello\n");
-		sleep(4);
-	}
-	return 0;
+    while(1)
+    {
+        printf("HELLO!\n");
+        sleep(1);
+    }
 }
 
-void are_you_sure(int signo){
-	char c = 0;
-	printf("Interrupted! OK to quit (y/n)? ");
-	c = getchar();
-	//	putchar('\n');
-	if(c == 'y') exit(0);
+void sig_int(int signo)
+{
+    char in;
+    sigset_t sigset, oldset;
+    sigemptyset(&oldset);
+
+    // SIGUSRs are blocked
+    sigemptyset(&sigset);
+    sigaddset(&sigset, SIGUSR2);
+    sigaddset(&sigset, SIGUSR1);
+    if (sigprocmask(SIG_BLOCK, &sigset, &oldset) < 0)
+    {
+        printf("sigprocmask %d error \n", signo);
+    }
+
+    // UNBLOCK SIG INT
+    sigemptyset(&sigset);
+    sigaddset(&sigset, SIGINT);
+    if (sigprocmask(SIG_UNBLOCK, &sigset, &oldset) < 0)
+    {
+        printf("sigprocmask %d error \n", signo);
+    }
+	
+    printf("are you sure to exit? (y/n)");
+    in = getchar();
+
+    switch(in) {
+	case 'y':
+	    printf("EXIT!\n");
+	    exit(0);
+	break;
+	case 'n':
+	break;
+	default:
+	    printf("WRONG INPUT! CONTINUE\n");
+	break;
+    }
 }
